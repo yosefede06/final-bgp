@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+#
+# Usage: ./mkdeps [clean] [distclean]
+#
+
+set -x -e -o pipefail
+
+LIBBGPDUMP=libbgpdump-1.6.0.tar.gz
+
+BASEDIR=$( cd -P -- "$(dirname -- "$(command -v -- "$0")")" && pwd -P )
+
+rm -rf "$BASEDIR/deps/${LIBBGPDUMP::${#LIBBGPDUMP}-7}" > /dev/null 2>&1
+
+[[ $1 == 'clean' ]] && exit
+
+rm -rf "$BASEDIR/lib/libbgpdump.so" > /dev/null 2>&1
+
+[[ $1 == 'distclean' ]] && exit
+
+tar xf "$BASEDIR/deps/$LIBBGPDUMP" -C "$BASEDIR/deps/"
+cd "$BASEDIR/deps/${LIBBGPDUMP::${#LIBBGPDUMP}-7}"
+autoheader
+autoconf
+CFLAGS="-Wno-nullability-completeness" ./configure
+make SYS_LIBS="-lbz2 -lz"
+cd - > /dev/null 2>&1
+
+mkdir "$BASEDIR/lib" > /dev/null 2>&1
+cp -f "$BASEDIR/deps/${LIBBGPDUMP::${#LIBBGPDUMP}-7}/libbgpdump.so" "$BASEDIR/lib"
