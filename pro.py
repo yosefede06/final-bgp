@@ -54,7 +54,6 @@ def process_mrt_file():
             csv_writer_changes = csv.writer(csvfile_changes)
             mrt_file = local_filename
             changes = defaultdict(int)
-            test_dict = {}
             with BGPDump(mrt_file) as bgp:
                 for entry in bgp:
                     if entry.attr and entry.attr.asPath and entry.body.announce:
@@ -65,10 +64,6 @@ def process_mrt_file():
                             paths_set = entry_data["paths_set"]
                             has_changed = entry_data["last_path"] != as_path
                             if has_changed and not entry_data["changed_recently"] and paths_set:
-                                if peer_as == 49134:
-                                    # print(f"Old: {entry_data['last_path']}")
-                                    # print(f"New: {as_path}")
-                                    pass
                                 changes[peer_as] += 1
                                 entry_data["changed_recently"] = True
                             paths_set.add(as_path)
@@ -82,12 +77,10 @@ def process_mrt_file():
                                 changes[peer_as] += 1
                                 entry_data["changed_recently"] = True
                             entry_data["last_path"] = ""
-            print(f"Prefixes: {len(collectors_metadata[49134])}")
-            print(f"Changes: {changes[49134]}")
             max_processed_data = ProcessingStrategies.max_paths(collectors_metadata)
-            # csv_writer_max.writerow([index, time_curr, *max_processed_data])
-            #
-            # csv_writer_changes.writerow([index, time_curr, *changes.items()])
+            csv_writer_max.writerow([index, time_curr, *max_processed_data])
+
+            csv_writer_changes.writerow([index, time_curr, *changes.items()])
 
             max_counts.append(max_processed_data[1])
             change_counts.append(changes)
@@ -175,10 +168,10 @@ if __name__ == "__main__":
     collector = "rrc00"
     destination_folder = "./mrt_files"
     # Load dictionaries if they exist
-    # loaded_dictionaries = load_dictionaries(pickle_file)
-    # if loaded_dictionaries:
-    #     collectors_metadata, max_counts, change_counts = loaded_dictionaries
-    # else:
-    #     os.remove(output_csv_max) if os.path.exists(output_csv_max) else None
-    #     os.remove(output_csv_changes) if os.path.exists(output_csv_changes) else None
+    loaded_dictionaries = load_dictionaries(pickle_file)
+    if loaded_dictionaries:
+        collectors_metadata, max_counts, change_counts = loaded_dictionaries
+    else:
+        os.remove(output_csv_max) if os.path.exists(output_csv_max) else None
+        os.remove(output_csv_changes) if os.path.exists(output_csv_changes) else None
     download_and_process()
